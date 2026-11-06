@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
 import { after, before, beforeEach, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -63,6 +64,31 @@ async function assertRejectedBeforeApi(client, name, args) {
   assert.equal(result.isError, true);
   assert.equal(requests.length, 0);
 }
+
+function readJson(file) {
+  return JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url)));
+}
+
+describe("package metadata", () => {
+  const pkg = readJson("package.json");
+  const registry = readJson("server.json");
+
+  it("keeps server.json in step with package.json", () => {
+    assert.equal(registry.name, pkg.mcpName);
+    assert.equal(registry.version, pkg.version);
+    assert.equal(registry.packages[0].version, pkg.version);
+    assert.equal(registry.packages[0].identifier, pkg.name);
+  });
+
+  it("fits the registry's description limit", () => {
+    assert.ok(registry.description.length <= 100);
+  });
+
+  it("reports the package version to MCP clients", async () => {
+    const client = await connect();
+    assert.equal(client.getServerVersion().version, pkg.version);
+  });
+});
 
 describe("tool catalogue", () => {
   it("exposes all 19 API operations with unique names and paths", async () => {

@@ -1,7 +1,10 @@
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { PurelymailApiError, type PurelymailClient } from "./client.js";
 import { tools, type ToolDefinition } from "./tools.js";
+
+const packageJson: { version: string } = createRequire(import.meta.url)("../package.json");
 
 export interface ServerOptions {
   client: PurelymailClient;
@@ -9,7 +12,7 @@ export interface ServerOptions {
 }
 
 export function createServer({ client, readOnly = false }: ServerOptions): McpServer {
-  const server = new McpServer({ name: "purelymail", version: "0.1.0" });
+  const server = new McpServer({ name: "purelymail", version: packageJson.version });
 
   for (const tool of tools) {
     if (readOnly && tool.kind !== "read") continue;
