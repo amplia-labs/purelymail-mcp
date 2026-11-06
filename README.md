@@ -107,22 +107,19 @@ tools require Node.js 20.19 or later.
 
 ### Releasing
 
-Releases are published to npm by the
-[publish workflow](.github/workflows/publish.yml), using
-[trusted publishing](https://docs.npmjs.com/trusted-publishers). No npm token is
-stored in the repository.
+Releases are automated with [Changesets](https://changesets.dev):
 
-1. Update the version in `package.json` and in both `version` fields of
-   `server.json`. A test fails if they disagree.
-2. Merge the change to `main`.
-3. Tag that commit and push the tag. The tag must match the version:
+1. Run `npm run changeset` in any pull request that changes the package, and
+   commit the generated file.
+2. After it merges, the [publish workflow](.github/workflows/publish.yml) opens
+   or updates a **Version Packages** pull request.
+3. Merging that pull request publishes the new version to npm, using
+   [trusted publishing](https://docs.npmjs.com/trusted-publishers). No npm token
+   is stored in the repository.
 
-   ```bash
-   git tag v1.2.3
-   git push origin v1.2.3
-   ```
-
-The workflow runs `npm run check` before uploading anything.
+Pull requests without a changeset do not release anything. Version pull requests
+do not trigger CI, so the publish workflow runs `npm run check` itself and stops
+before publishing if it fails.
 
 ## License
 

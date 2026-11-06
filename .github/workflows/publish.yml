@@ -1,23 +1,93 @@
-name: Publish to npm
+# npm trusted publishing is tied to this file name. If it changes, update the
+# trusted publisher on npm too.
+name: Publish
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
 
-permissions:
-  contents: read
-  id-token: write # Required for npm trusted publishing
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
 
 jobs:
-  publish:
+  select-mode:
     runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.select-mode.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.select-mode.outputs.publish-plan-artifact-id }}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
-      - name: Check that the tag matches the package version
-        run: test "$GITHUB_REF_NAME" = "v$(node -p "require('./package.json').version")"
       - run: npm ci
-      # prepublishOnly runs the full check before anything is uploaded.
-      - run: npm publish
+      - id: select-mode
+        uses: changesets/action/select-mode@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+
+  version:
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: npm ci
+      - uses: changesets/action/version@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          script: npm run version-packages
+
+  pack:
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: npm ci
+      # Version pull requests do not trigger CI, and prepublishOnly does not run
+      # for packed tarballs, so this is the check that gates a release.
+      - run: npm run check
+      - id: pack
+        uses: changesets/action/pack@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
+
+  publish:
+    needs: pack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: npm ci
+      - uses: changesets/action/publish@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
