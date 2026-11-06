@@ -107,19 +107,22 @@ tools require Node.js 20.19 or later.
 
 ### Releasing
 
+Releases are published to npm by the
+[publish workflow](.github/workflows/publish.yml), using
+[trusted publishing](https://docs.npmjs.com/trusted-publishers). No npm token is
+stored in the repository.
+
 1. Update the version in `package.json` and in both `version` fields of
    `server.json`. A test fails if they disagree.
-2. Run `npm publish`. It runs `npm run check` first.
-3. Update the [MCP Registry](https://registry.modelcontextprotocol.io):
+2. Merge the change to `main`.
+3. Tag that commit and push the tag. The tag must match the version:
 
    ```bash
-   mcp-publisher login github --token <token>
-   mcp-publisher publish
+   git tag v1.2.3
+   git push origin v1.2.3
    ```
 
-   The token must be a personal access token with the `read:org` scope, from an
-   owner of the `amplia-labs` organization. The interactive `mcp-publisher login
-   github` flow [cannot publish to organization namespaces](https://github.com/modelcontextprotocol/registry/issues/1468).
+The workflow runs `npm run check` before uploading anything.
 
 ## License
 
