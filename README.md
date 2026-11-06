@@ -4,18 +4,10 @@ MCP server for the [Purelymail API](https://news.purelymail.com/api/index.html).
 It covers all 19 API operations: users, password reset methods, app passwords,
 routing rules, domains and account credit.
 
-## Installation
+## Usage
 
-Requires Node.js 20 or later.
-
-```bash
-git clone https://github.com/amplia-labs/purelymail-mcp.git
-cd purelymail-mcp
-npm install
-npm run build
-```
-
-## Configuration
+Requires Node.js 20 or later. There is nothing to install: MCP clients run the
+package through `npx`.
 
 | Variable               | Required | Description                                     |
 | ---------------------- | -------- | ----------------------------------------------- |
@@ -27,7 +19,7 @@ npm run build
 ```bash
 claude mcp add purelymail \
   -e PURELYMAIL_API_TOKEN=your-token \
-  -- node /path/to/purelymail-mcp/dist/index.js
+  -- npx -y @amplia-labs/purelymail-mcp
 ```
 
 ### Other MCP clients
@@ -36,8 +28,8 @@ claude mcp add purelymail \
 {
   "mcpServers": {
     "purelymail": {
-      "command": "node",
-      "args": ["/path/to/purelymail-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@amplia-labs/purelymail-mcp"],
       "env": { "PURELYMAIL_API_TOKEN": "your-token" }
     }
   }
@@ -79,7 +71,19 @@ clients can use to ask for confirmation.
 - Requests are never retried automatically. After a timeout, check the current
   state before repeating a write.
 
-## Quality checks
+## Development
+
+```bash
+git clone https://github.com/amplia-labs/purelymail-mcp.git
+cd purelymail-mcp
+npm install
+npm run build
+```
+
+To run a local build from an MCP client, use
+`node /path/to/purelymail-mcp/dist/index.js` as the command.
+
+### Quality checks
 
 ```bash
 npm run check
@@ -100,3 +104,23 @@ To fix issues automatically, run `npm run lint:fix` and `npm run format`.
 
 The tests use a fake HTTP server and never call the real API. The development
 tools require Node.js 20.19 or later.
+
+### Releasing
+
+1. Update the version in `package.json` and in both `version` fields of
+   `server.json`. A test fails if they disagree.
+2. Run `npm publish`. It runs `npm run check` first.
+3. Update the [MCP Registry](https://registry.modelcontextprotocol.io):
+
+   ```bash
+   mcp-publisher login github --token <token>
+   mcp-publisher publish
+   ```
+
+   The token must be a personal access token with the `read:org` scope, from an
+   owner of the `amplia-labs` organization. The interactive `mcp-publisher login
+   github` flow [cannot publish to organization namespaces](https://github.com/modelcontextprotocol/registry/issues/1468).
+
+## License
+
+[MIT](LICENSE)
