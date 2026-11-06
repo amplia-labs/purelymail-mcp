@@ -108,8 +108,9 @@ tools require Node.js 20.19 or later.
 ### Releasing
 
 Releases are published to npm by the
-[publish workflow](.github/workflows/publish.yml), which needs an `NPM_TOKEN`
-repository secret.
+[publish workflow](.github/workflows/publish.yml), using
+[trusted publishing](https://docs.npmjs.com/trusted-publishers). No npm token is
+stored in the repository.
 
 1. Update the version in `package.json` and in both `version` fields of
    `server.json`. A test fails if they disagree.
@@ -117,8 +118,8 @@ repository secret.
 3. Tag that commit and push the tag. The tag must match the version:
 
    ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v1.2.3
+   git push origin v1.2.3
    ```
 
 The workflow runs `npm run check` before uploading anything.
