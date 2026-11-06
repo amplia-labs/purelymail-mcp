@@ -1,0 +1,42 @@
+{
+  "name": "purelymail-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server for the Purelymail API (users, domains, routing, app passwords, billing)",
+  "license": "UNLICENSED",
+  "bin": {
+    "purelymail-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test test/",
+    "lint": "oxlint --deny-warnings",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "knip": "knip",
+    "cpd": "jscpd",
+    "check": "tsc --noEmit && npm run lint && npm run format:check && npm run knip && npm run cpd && npm test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "jscpd": "^5.4.2",
+    "knip": "^6.44.1",
+    "oxfmt": "^0.76.0",
+    "oxlint": "^1.91.0",
+    "oxlint-tsgolint": "^7.0.2006",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

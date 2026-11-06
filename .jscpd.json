@@ -1,0 +1,6 @@
+{
+  "path": ["src", "test"],
+  "format": ["typescript", "javascript"],
+  "threshold": 0,
+  "reporters": ["console"]
+}
