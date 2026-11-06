@@ -1,12 +1,12 @@
 # purelymail-mcp
 
-Servidor MCP para a [API do Purelymail](https://news.purelymail.com/api/index.html).
-Cobre as 19 operações da API: usuários, métodos de reset de senha, senhas de app,
-regras de roteamento, domínios e crédito da conta.
+MCP server for the [Purelymail API](https://news.purelymail.com/api/index.html).
+It covers all 19 API operations: users, password reset methods, app passwords,
+routing rules, domains and account credit.
 
-## Instalação
+## Installation
 
-Requer Node.js 20 ou superior.
+Requires Node.js 20 or later.
 
 ```bash
 git clone https://github.com/amplia-labs/purelymail-mcp.git
@@ -15,30 +15,30 @@ npm install
 npm run build
 ```
 
-## Configuração
+## Configuration
 
-| Variável               | Obrigatória | Descrição                                                  |
-| ---------------------- | ----------- | ---------------------------------------------------------- |
-| `PURELYMAIL_API_TOKEN` | sim         | Token da API, obtido nas configurações da conta Purelymail |
-| `PURELYMAIL_READ_ONLY` | não         | `true` ou `1` expõe só os 7 tools de leitura               |
+| Variable               | Required | Description                                     |
+| ---------------------- | -------- | ----------------------------------------------- |
+| `PURELYMAIL_API_TOKEN` | yes      | API token from your Purelymail account settings |
+| `PURELYMAIL_READ_ONLY` | no       | `true` or `1` exposes only the 7 read tools     |
 
 ### Claude Code
 
 ```bash
 claude mcp add purelymail \
-  -e PURELYMAIL_API_TOKEN=seu-token \
-  -- node /caminho/para/purelymail-mcp/dist/index.js
+  -e PURELYMAIL_API_TOKEN=your-token \
+  -- node /path/to/purelymail-mcp/dist/index.js
 ```
 
-### Outros clientes MCP
+### Other MCP clients
 
 ```json
 {
   "mcpServers": {
     "purelymail": {
       "command": "node",
-      "args": ["/caminho/para/purelymail-mcp/dist/index.js"],
-      "env": { "PURELYMAIL_API_TOKEN": "seu-token" }
+      "args": ["/path/to/purelymail-mcp/dist/index.js"],
+      "env": { "PURELYMAIL_API_TOKEN": "your-token" }
     }
   }
 }
@@ -46,57 +46,57 @@ claude mcp add purelymail \
 
 ## Tools
 
-| Área           | Leitura                              | Escrita                                | Destrutivo                                                     |
+| Area           | Read                                 | Write                                  | Destructive                                                    |
 | -------------- | ------------------------------------ | -------------------------------------- | -------------------------------------------------------------- |
-| Usuários       | `list_users`, `get_user`             | `create_user`                          | `modify_user`, `delete_user`                                   |
-| Reset de senha | `list_password_reset_methods`        |                                        | `upsert_password_reset_method`, `delete_password_reset_method` |
-| Senhas de app  |                                      | `create_app_password`                  | `delete_app_password`                                          |
-| Roteamento     | `list_routing_rules`                 | `create_routing_rule`                  | `delete_routing_rule`                                          |
-| Domínios       | `list_domains`, `get_ownership_code` | `add_domain`, `update_domain_settings` | `delete_domain`                                                |
-| Cobrança       | `check_account_credit`               |                                        |                                                                |
+| Users          | `list_users`, `get_user`             | `create_user`                          | `modify_user`, `delete_user`                                   |
+| Password reset | `list_password_reset_methods`        |                                        | `upsert_password_reset_method`, `delete_password_reset_method` |
+| App passwords  |                                      | `create_app_password`                  | `delete_app_password`                                          |
+| Routing        | `list_routing_rules`                 | `create_routing_rule`                  | `delete_routing_rule`                                          |
+| Domains        | `list_domains`, `get_ownership_code` | `add_domain`, `update_domain_settings` | `delete_domain`                                                |
+| Billing        | `check_account_credit`               |                                        |                                                                |
 
-Os tools levam as anotações MCP `readOnlyHint` e `destructiveHint`, que os
-clientes podem usar para pedir confirmação.
+Tools carry the MCP annotations `readOnlyHint` and `destructiveHint`, which
+clients can use to ask for confirmation.
 
-## Segurança
+## Security
 
-- O token dá acesso administrativo à conta inteira. Use `PURELYMAIL_READ_ONLY=true`
-  quando só precisar consultar.
-- `delete_domain` apaga o domínio **e todos os usuários** dele.
-- Senhas passadas a `create_user` e `modify_user`, e as senhas devolvidas por
-  `create_app_password`, passam pelo contexto do modelo e pelo histórico da
-  conversa do cliente MCP. Troque depois as que forem sensíveis.
+- The token grants administrative access to the whole account. Use
+  `PURELYMAIL_READ_ONLY=true` when you only need to look things up.
+- `delete_domain` deletes the domain **and all of its users**.
+- Passwords given to `create_user` and `modify_user`, and those returned by
+  `create_app_password`, pass through the model's context and the MCP client's
+  conversation history. Rotate any that are sensitive afterwards.
 
-## Comportamento da API
+## API behavior
 
-- Erros voltam com **HTTP 200** e `{"type":"error","code":...,"message":...}`,
-  algo que a spec não documenta. O cliente verifica o corpo da resposta e devolve
-  esses casos como `isError`.
-- `list_password_reset_methods` devolve os métodos numa chave chamada `users`.
-  O nome vem da própria API.
-- `delete_password_reset_method` exige `target`, embora a spec o trate como
-  opcional, porque ela não diz o que acontece sem ele.
-- Não há repetição automática de requisições. Depois de um timeout, confira o
-  estado antes de repetir uma escrita.
+- Errors come back as **HTTP 200** with
+  `{"type":"error","code":...,"message":...}`, which the spec does not document.
+  The client inspects the response body and reports these as `isError`.
+- `list_password_reset_methods` returns the methods under a key named `users`.
+  That name comes from the API itself.
+- `delete_password_reset_method` requires `target`, even though the spec marks it
+  optional, because the spec does not say what happens without it.
+- Requests are never retried automatically. After a timeout, check the current
+  state before repeating a write.
 
-## Qualidade
+## Quality checks
 
 ```bash
 npm run check
 ```
 
-Roda em sequência, parando na primeira falha:
+Runs these in order, stopping at the first failure:
 
-| Comando                | Ferramenta                                              | O que verifica                                                                            |
-| ---------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `npx tsc --noEmit`     | TypeScript                                              | Tipos                                                                                     |
-| `npm run lint`         | [oxlint](https://oxc.rs/docs/guide/usage/linter.html)   | Regras `correctness`, `suspicious` e `perf`, com análise de tipos; avisos também reprovam |
-| `npm run format:check` | [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) | Formatação                                                                                |
-| `npm run knip`         | [knip](https://knip.dev)                                | Exports, arquivos e dependências sem uso                                                  |
-| `npm run cpd`          | [jscpd](https://github.com/kucherenko/jscpd)            | Código duplicado em `src` e `test`, com tolerância zero                                   |
-| `npm test`             | `node:test`                                             | Build e testes                                                                            |
+| Command                | Tool                                                    | What it checks                                                                             |
+| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `npx tsc --noEmit`     | TypeScript                                              | Types                                                                                      |
+| `npm run lint`         | [oxlint](https://oxc.rs/docs/guide/usage/linter.html)   | `correctness`, `suspicious` and `perf` rules, with type-aware analysis; warnings also fail |
+| `npm run format:check` | [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) | Formatting                                                                                 |
+| `npm run knip`         | [knip](https://knip.dev)                                | Unused exports, files and dependencies                                                     |
+| `npm run cpd`          | [jscpd](https://github.com/kucherenko/jscpd)            | Duplicated code in `src` and `test`, with zero tolerance                                   |
+| `npm test`             | `node:test`                                             | Build and tests                                                                            |
 
-Para corrigir automaticamente, use `npm run lint:fix` e `npm run format`.
+To fix issues automatically, run `npm run lint:fix` and `npm run format`.
 
-Os testes usam um servidor HTTP falso e não chamam a API real. As ferramentas de
-desenvolvimento exigem Node.js 20.19 ou superior.
+The tests use a fake HTTP server and never call the real API. The development
+tools require Node.js 20.19 or later.
