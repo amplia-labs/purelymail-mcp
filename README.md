@@ -1,18 +1,36 @@
-# purelymail-mcp
+<div align="center">
 
-MCP server for the [Purelymail API](https://news.purelymail.com/api/index.html).
-It covers all 19 API operations: users, password reset methods, app passwords,
-routing rules, domains and account credit.
+# Purelymail MCP
 
-## Usage
+**Manage your [Purelymail](https://purelymail.com) account from any MCP client**
 
-Requires Node.js 20 or later. There is nothing to install: MCP clients run the
-package through `npx`.
+[![npm version](https://img.shields.io/npm/v/@amplia-labs/purelymail-mcp?style=flat-square)](https://www.npmjs.com/package/@amplia-labs/purelymail-mcp)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D20-3c873a?style=flat-square)](https://nodejs.org)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
-| Variable               | Required | Description                                     |
-| ---------------------- | -------- | ----------------------------------------------- |
-| `PURELYMAIL_API_TOKEN` | yes      | API token from your Purelymail account settings |
-| `PURELYMAIL_READ_ONLY` | no       | `true` or `1` exposes only the 7 read tools     |
+[Features](#features) • [Getting started](#getting-started) • [Configuration](#configuration) • [Tools](#tools) • [Security](#security) • [Development](#development)
+
+</div>
+
+An [MCP](https://modelcontextprotocol.io) server that gives AI assistants access to the [Purelymail API](https://news.purelymail.com/api/index.html). Ask for what you need in plain language, and let your assistant handle mailboxes, domains and routing for you:
+
+> Which of my domains are failing DNS checks?
+
+> Create `sales@example.com` and forward `hello@example.com` to it.
+
+> How much account credit do I have left?
+
+## Features
+
+- **Full API coverage**: all 19 operations, across users, password reset methods, app passwords, routing rules, domains and billing.
+- **Read-only mode**: expose only the 7 tools that cannot change anything.
+- **Safety annotations**: tools are marked as read-only or destructive, so clients can ask for confirmation.
+- **Reliable error reporting**: failures are detected from the response body, because the API reports them with HTTP 200.
+- **Nothing to install**: MCP clients run the package through `npx`.
+
+## Getting started
+
+You need [Node.js](https://nodejs.org) 20 or later and an API token from your Purelymail account settings.
 
 ### Claude Code
 
@@ -23,6 +41,8 @@ claude mcp add purelymail \
 ```
 
 ### Other MCP clients
+
+Add the server to your client's MCP configuration:
 
 ```json
 {
@@ -36,6 +56,16 @@ claude mcp add purelymail \
 }
 ```
 
+> [!TIP]
+> Trying it for the first time? Set `PURELYMAIL_READ_ONLY` to `true` and ask for your account credit. It confirms that everything works without changing your account.
+
+## Configuration
+
+| Variable               | Required | Description                                        |
+| ---------------------- | -------- | -------------------------------------------------- |
+| `PURELYMAIL_API_TOKEN` | Yes      | API token from your Purelymail account settings    |
+| `PURELYMAIL_READ_ONLY` | No       | Set to `true` or `1` to expose only the read tools |
+
 ## Tools
 
 | Area           | Read                                 | Write                                  | Destructive                                                    |
@@ -47,29 +77,22 @@ claude mcp add purelymail \
 | Domains        | `list_domains`, `get_ownership_code` | `add_domain`, `update_domain_settings` | `delete_domain`                                                |
 | Billing        | `check_account_credit`               |                                        |                                                                |
 
-Tools carry the MCP annotations `readOnlyHint` and `destructiveHint`, which
-clients can use to ask for confirmation.
+Tools that can lock someone out of an account, such as `modify_user`, are also marked as destructive.
+
+### API notes
+
+- `list_password_reset_methods` returns the methods under a key named `users`. That name comes from the API.
+- `delete_password_reset_method` requires `target`, even though the API spec marks it as optional, because the spec does not say what happens without it.
+- `delete_app_password` needs the full password, because the API cannot list app passwords.
+- Requests are never retried automatically. After a timeout, check the current state before repeating a write.
 
 ## Security
 
-- The token grants administrative access to the whole account. Use
-  `PURELYMAIL_READ_ONLY=true` when you only need to look things up.
-- `delete_domain` deletes the domain **and all of its users**.
-- Passwords given to `create_user` and `modify_user`, and those returned by
-  `create_app_password`, pass through the model's context and the MCP client's
-  conversation history. Rotate any that are sensitive afterwards.
+> [!WARNING]
+> The API token grants administrative access to your whole account. `delete_domain` deletes a domain **and all of its users**. Use read-only mode unless you need to make changes, and review destructive actions before approving them.
 
-## API behavior
-
-- Errors come back as **HTTP 200** with
-  `{"type":"error","code":...,"message":...}`, which the spec does not document.
-  The client inspects the response body and reports these as `isError`.
-- `list_password_reset_methods` returns the methods under a key named `users`.
-  That name comes from the API itself.
-- `delete_password_reset_method` requires `target`, even though the spec marks it
-  optional, because the spec does not say what happens without it.
-- Requests are never retried automatically. After a timeout, check the current
-  state before repeating a write.
+> [!IMPORTANT]
+> Passwords given to `create_user` and `modify_user`, and those returned by `create_app_password`, pass through the model's context and your client's conversation history. Rotate any that are sensitive afterwards.
 
 ## Development
 
@@ -80,47 +103,21 @@ npm install
 npm run build
 ```
 
-To run a local build from an MCP client, use
-`node /path/to/purelymail-mcp/dist/index.js` as the command.
+To try a local build, use `node /path/to/purelymail-mcp/dist/index.js` as the command in your MCP client. Development tools require Node.js 20.19 or later.
 
-### Quality checks
+| Command             | Description                                                   |
+| ------------------- | ------------------------------------------------------------- |
+| `npm run check`     | Runs types, linting, formatting, knip, jscpd, build and tests |
+| `npm run lint:fix`  | Fixes linting issues                                          |
+| `npm run format`    | Formats the code                                              |
+| `npm run changeset` | Describes a change for the next release                       |
 
-```bash
-npm run check
-```
-
-Runs these in order, stopping at the first failure:
-
-| Command                | Tool                                                    | What it checks                                                                             |
-| ---------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `npx tsc --noEmit`     | TypeScript                                              | Types                                                                                      |
-| `npm run lint`         | [oxlint](https://oxc.rs/docs/guide/usage/linter.html)   | `correctness`, `suspicious` and `perf` rules, with type-aware analysis; warnings also fail |
-| `npm run format:check` | [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) | Formatting                                                                                 |
-| `npm run knip`         | [knip](https://knip.dev)                                | Unused exports, files and dependencies                                                     |
-| `npm run cpd`          | [jscpd](https://github.com/kucherenko/jscpd)            | Duplicated code in `src` and `test`, with zero tolerance                                   |
-| `npm test`             | `node:test`                                             | Build and tests                                                                            |
-
-To fix issues automatically, run `npm run lint:fix` and `npm run format`.
-
-The tests use a fake HTTP server and never call the real API. The development
-tools require Node.js 20.19 or later.
+Tests use a fake HTTP server and never call the real API.
 
 ### Releasing
 
 Releases are automated with [Changesets](https://changesets.dev):
 
-1. Run `npm run changeset` in any pull request that changes the package, and
-   commit the generated file.
-2. After it merges, the [publish workflow](.github/workflows/publish.yml) opens
-   or updates a **Version Packages** pull request.
-3. Merging that pull request publishes the new version to npm, using
-   [trusted publishing](https://docs.npmjs.com/trusted-publishers). No npm token
-   is stored in the repository.
-
-Pull requests without a changeset do not release anything. Version pull requests
-do not trigger CI, so the publish workflow runs `npm run check` itself and stops
-before publishing if it fails.
-
-## License
-
-[MIT](LICENSE)
+1. Add a changeset to any pull request that changes the package.
+2. After it merges, the [publish workflow](.github/workflows/publish.yml) opens a **Version Packages** pull request.
+3. Merging that pull request runs all checks and publishes to npm through [trusted publishing](https://docs.npmjs.com/trusted-publishers), so no npm token is stored in the repository.
